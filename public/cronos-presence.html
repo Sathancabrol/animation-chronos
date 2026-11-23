@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#03050b">
+<title>CRONOS — Présence ferrofluide</title>
+<style>
+:root{color-scheme:dark;--tone:#75d4f9;--muted:#8293ae}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;min-height:100%;background:#03050b;color:#eaf2ff;font-family:Inter,"Segoe UI",Arial,sans-serif}
+body{overflow:hidden}
+button,input{font:inherit}
+#stage{position:fixed;inset:0;overflow:hidden;background:#03050b;touch-action:pan-y}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.scrim{position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,rgba(2,4,10,.68),transparent 25%,transparent 75%,rgba(2,4,10,.58)),linear-gradient(0deg,rgba(2,4,10,.92),transparent 26%,transparent 86%,rgba(2,4,10,.5))}
+.header{position:absolute;z-index:2;top:24px;left:32px;right:32px;display:flex;justify-content:space-between;gap:24px;align-items:start;pointer-events:none}
+.brand small{display:block;font-size:10px;letter-spacing:.35em;color:#7693b0;text-transform:uppercase;margin-bottom:5px}
+.brand strong{display:block;font-weight:400;letter-spacing:.32em;font-size:clamp(22px,3vw,36px);line-height:1.3;text-shadow:0 0 28px #5db9f755}
+.brand em{display:block;font-style:normal;font-size:11px;letter-spacing:.11em;color:#8d9aaf;margin-top:4px}
+.link-state{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid #33475a66;border-radius:999px;background:#08101c99;backdrop-filter:blur(12px);font-family:Consolas,monospace;font-size:10px;letter-spacing:.08em;color:#9fb9d0}
+.dot{width:6px;height:6px;background:var(--tone);border-radius:50%;box-shadow:0 0 10px var(--tone)}
+.info{position:absolute;top:42%;left:4%;transform:translateY(-50%);z-index:2;max-width:230px;pointer-events:none}
+.kicker{font:10px Consolas,monospace;letter-spacing:.2em;color:var(--tone);text-transform:uppercase}
+.info h1{font-weight:450;font-size:23px;margin:12px 0 10px;letter-spacing:.04em}
+.info p{font-size:12px;color:#a0aec3;line-height:1.75;margin:0}
+.stat{display:flex;justify-content:space-between;border-top:1px solid #23364a;margin-top:17px;padding-top:10px;gap:14px;font:10px Consolas,monospace;color:#809ab2}
+.stat span:last-child{color:#c1e6f9}
+.telemetry{position:absolute;right:4%;top:43%;transform:translateY(-50%);z-index:2;width:180px;pointer-events:none;text-align:right}
+.telemetry .mini{color:#7295b4;font:10px Consolas,monospace;letter-spacing:.14em}
+.telemetry .value{font-size:25px;font-weight:300;letter-spacing:.1em;color:#c8edfc;margin:8px 0 24px}
+.telemetry .divider{height:1px;background:linear-gradient(90deg,transparent,#31536b);margin-bottom:14px}
+.telemetry p{font:11px Consolas,monospace;color:#a4b4c6}
+.dock{position:absolute;z-index:5;bottom:24px;left:50%;transform:translateX(-50%);width:min(95%,920px);border:1px solid #2941588c;border-radius:16px;background:#060c17db;box-shadow:0 14px 50px #000a,0 0 45px #31627e13;backdrop-filter:blur(16px);padding:14px}
+.dockTop{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.dockTop span{font:10px Consolas,monospace;color:#8199b3;letter-spacing:.13em}
+.dockTop button{border:0;background:transparent;color:#a8c0d4;font-size:11px;cursor:pointer}
+.states{display:flex;gap:6px;flex-wrap:wrap}
+.states button{border:1px solid #294158;background:#0a1422;color:#a2b7cd;border-radius:8px;padding:9px 13px;font-size:11px;cursor:pointer;transition:.15s}
+.states button:hover{border-color:#6aa4c6;color:#fff}
+.states button[aria-pressed="true"]{border-color:var(--tone);color:#effcff;background:#13314a;box-shadow:inset 0 0 13px #76d8fc18}
+.detail{display:flex;align-items:center;justify-content:space-between;margin-top:12px;gap:15px;flex-wrap:wrap}
+.detail label{display:flex;align-items:center;gap:10px;font:10px Consolas,monospace;color:#91abc4}
+.detail input{width:104px;accent-color:#83d7fa}
+.hint{font:10px Consolas,monospace;color:#647f96}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(max-width:750px){.header{top:16px;left:16px;right:16px}.brand strong{font-size:22px}.brand em{max-width:220px}.link-state{font-size:9px;padding:8px}.info{top:25%;left:18px;transform:none}.info h1{font-size:16px;margin:7px 0}.info p{display:none}.info .stat{margin-top:7px}.telemetry{display:none}.dock{bottom:12px;padding:12px;width:calc(100% - 22px)}.states{display:grid;grid-template-columns:repeat(4,1fr)}.states button{padding:9px 4px;font-size:10px}.detail{margin-top:9px}.hint{display:none}}
+@media(prefers-reduced-motion:reduce){.states button{transition:none}}
+</style>
+</head>
+<body>
+<div id="stage" aria-label="Animation interactive de CRONOS en ferrofluide">
+<canvas id="fluid" aria-hidden="true"></canvas>
+<div class="scrim"></div>
+<header class="header">
+<div class="brand"><small>OLYMPUS / INCARNATION 01</small><strong>C R O N O S</strong><em>La matière du temps · interface vivante</em></div>
+<div class="link-state"><span class="dot"></span><span id="source">MODE DÉMONSTRATION · LOCAL</span></div>
+</header>
+<section class="info" aria-live="polite">
+<div class="kicker" id="stateCode">00 / PRÉSENCE</div>
+<h1 id="stateTitle">En veille active</h1>
+<p id="stateDesc">Une conscience opératoire en suspension. Le noyau demeure vivant, même sans requête.</p>
+<div class="stat"><span>AGENT ACTIF</span><span id="agent">CRONOS</span></div>
+<div class="stat"><span>PROGRESSION</span><span id="progress">—</span></div>
+</section>
+<aside class="telemetry" aria-hidden="true"><div class="mini">MORPHOLOGIE</div><div class="value">BILATÉRALE</div><div class="divider"></div><div class="mini">COHÉSION</div><p>FLUIDE / FILAMENTS / PONT</p><div class="mini">ACTIVITÉ</div><p id="activity">RESPIRATION CONTINUE</p></aside>
+<div class="dock">
+<div class="dockTop"><span>ÉTATS DE LA PRÉSENCE · TEST INTERACTIF</span><button id="next" type="button">Événement suivant ↗</button></div>
+<div class="states" role="group" aria-label="États visuels de CRONOS">
+<button data-state="idle" aria-pressed="true">Présence</button>
+<button data-state="listening" aria-pressed="false">Écoute</button>
+<button data-state="thinking" aria-pressed="false">Réflexion</button>
+<button data-state="dispatching" aria-pressed="false">Délégation</button>
+<button data-state="working" aria-pressed="false">Action</button>
+<button data-state="speaking" aria-pressed="false">Parole</button>
+<button data-state="warning" aria-pressed="false">Alerte</button>
+<button data-state="offline" aria-pressed="false">Hors ligne</button>
+</div>
+<div class="detail">
+<label>INTENSITÉ <input type="range" id="intensity" min=".3" max="2.5" step=".1" value="1.15"></label>
+<label>COMPLEXITÉ <input type="range" id="complexity" min=".5" max="2" step=".1" value="1.2"></label>
+<label><input type="checkbox" id="calm"> MOUVEMENT RÉDUIT</label>
+<span class="hint">Déplace le pointeur pour infléchir le champ</span>
+</div>
+</div>
+</div>
+<script>
+(function(){
+"use strict";
+var canvas=document.getElementById("fluid"),ctx=canvas.getContext("2d",{alpha:false});
+var stage=document.getElementById("stage"),state="idle",targetEnergy=.28,energy=.28;
+var intensity=1.15,complexity=1.2,amplitude=0,progress=null,agent="CRONOS",simulated=true;
+var pointer={x:.5,y:.5},t=0,prev=0,w=0,h=0,dpr=1,raf=0;
+var reduced=matchMedia("(prefers-reduced-motion: reduce)").matches;
+var specs={
+idle:["00 / PRÉSENCE","En veille active","Noyau permanent, matière en suspension et respiration lente.","#75d4f9",.26,"RESPIRATION CONTINUE"],
+listening:["01 / RÉCEPTION","À l'écoute","La surface ferrofluide se tend vers la source du signal.","#74e8ff",.65,"CAPTATION DU SIGNAL"],
+thinking:["02 / COGNITION","Analyse en cours","Les deux hémisphères échangent des impulsions et les filaments s'étirent.","#b6a0ff",.92,"RÉSONANCE INTERNE"],
+dispatching:["03 / ORCHESTRATION","Délégation","Le pont central transmet un flux vers les agents du système.","#f4c783",1.05,"ROUTAGE DES FLUX"],
+working:["04 / EXÉCUTION","Mission active","La matière circule en continu, sans rompre la cohésion du noyau.","#79dcbd",1.0,"EXÉCUTION CONTRÔLÉE"],
+speaking:["05 / EXPRESSION","CRONOS répond","Les ondes acoustiques modulent le noyau et son halo.","#9ceaff",.85,"SYNTHÈSE VOCALE"],
+warning:["06 / INCIDENT","Attention requise","Perturbation magnétique : le système conserve sa cohésion.","#ff9b82",1.2,"SURVEILLANCE / ERREUR"],
+offline:["07 / REPLI LOCAL","Connexion absente","Le noyau reste visible. Aucune activité réseau n'est supposée.","#778ca4",.1,"ATTENTE / SECOURS"]
+};
+var order=Object.keys(specs);
+function clamp(v,min,max){return Math.max(min,Math.min(max,v));}
+function resize(){w=innerWidth;h=innerHeight;dpr=Math.min(devicePixelRatio||1,1.7);canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);canvas.style.width=w+"px";canvas.style.height=h+"px";ctx.setTransform(dpr,0,0,dpr,0,0);}
+function rgb(hex,alpha){var v=parseInt(hex.slice(1),16);return "rgba("+((v>>16)&255)+","+((v>>8)&255)+","+(v&255)+","+alpha+")";}
+function apply(data){
+if(!data||!Object.prototype.hasOwnProperty.call(specs,data.state))return;
+state=data.state;var s=specs[state];
+targetEnergy=s[4];document.documentElement.style.setProperty("--tone",s[3]);
+document.getElementById("stateCode").textContent=s[0];
+document.getElementById("stateTitle").textContent=s[1];
+document.getElementById("stateDesc").textContent=(typeof data.label==="string"&&data.label.trim())?data.label.slice(0,140):s[2];
+document.getElementById("activity").textContent=s[5];
+agent=(typeof data.agent==="string"&&data.agent.trim())?data.agent.slice(0,32):"CRONOS";
+document.getElementById("agent").textContent=agent;
+progress=(typeof data.progress==="number"&&Number.isFinite(data.progress))?clamp(data.progress,0,1):null;
+document.getElementById("progress").textContent=progress===null?"—":Math.round(progress*100)+" %";
+if(typeof data.amplitude==="number")amplitude=clamp(data.amplitude,0,1);
+if(data.source==="live")simulated=false;
+document.getElementById("source").textContent=simulated?"MODE DÉMONSTRATION · LOCAL":"ÉVÉNEMENT REÇU · LOCAL";
+document.querySelectorAll("[data-state]").forEach(function(b){b.setAttribute("aria-pressed",String(b.dataset.state===state));});
+}
+function drawLobe(cx,cy,rx,ry,side,tone,phase){
+var n=240,spikes=Math.round(13+complexity*4),path=new Path2D(),k=energy*intensity;
+for(var i=0;i<=n;i++){
+var a=i/n*Math.PI*2,tip=Math.pow(Math.max(0,Math.cos(a*spikes+phase*.3+side)),23);
+var folding=Math.sin(3*a+phase*.8+side)*.05+Math.sin(7*a-phase*.5+side)*.032;
+var r=1+folding+tip*(.08+.13*k);
+var px=cx+Math.cos(a)*rx*r,py=cy+Math.sin(a)*ry*r;
+if(!i)path.moveTo(px,py);else path.lineTo(px,py);
+}path.closePath();
+ctx.save();ctx.shadowColor=rgb(tone,.32);ctx.shadowBlur=20+energy*22;
+var g=ctx.createRadialGradient(cx-rx*.33,cy-ry*.25,3,cx+rx*.1,cy+ry*.04,ry*1.27);
+g.addColorStop(0,"#697388");g.addColorStop(.12,"#293449");g.addColorStop(.29,"#171724");g.addColorStop(.62,"#080b15");g.addColorStop(1,"#01030a");
+ctx.fillStyle=g;ctx.fill(path);ctx.shadowBlur=0;
+ctx.strokeStyle=rgb(tone,.4+Math.min(.35,energy*.2));ctx.lineWidth=1.5;ctx.stroke(path);
+ctx.save();ctx.clip(path);
+var shine=ctx.createLinearGradient(cx-rx,cy-ry,cx+rx,cy+ry);shine.addColorStop(0,"#e3f3ff35");shine.addColorStop(.17,"#bcc8e91a");shine.addColorStop(.35,"#18213900");shine.addColorStop(.65,"#899fc912");shine.addColorStop(1,"#05070c00");ctx.fillStyle=shine;ctx.fillRect(cx-rx*1.4,cy-ry*1.4,rx*2.8,ry*2.8);
+for(var f=0;f<11;f++){
+var yy=cy-ry*.8+f*ry*.16;ctx.beginPath();ctx.moveTo(cx-rx*.95,yy);
+ctx.bezierCurveTo(cx-rx*.2,yy+Math.sin(f*1.7+phase)*16,cx+rx*.1,yy-28+Math.sin(phase+f)*13,cx+rx*.83,yy+10);
+ctx.strokeStyle="rgba(171,185,215,"+(.025+f%3*.013)+")";ctx.lineWidth=1.2;ctx.stroke();
+}
+ctx.restore();ctx.restore();
+}
+function drawFilament(x1,y1,x2,y2,shift,tone,alpha,width){
+ctx.beginPath();ctx.moveTo(x1,y1);
+ctx.bezierCurveTo(x1+shift,y1-56,x2-shift*.5,y2+40,x2,y2);
+ctx.strokeStyle=rgb(tone,alpha*.25);ctx.lineWidth=width*4;ctx.shadowColor=tone;ctx.shadowBlur=18;ctx.stroke();
+ctx.shadowBlur=0;ctx.strokeStyle=rgb(tone,alpha);ctx.lineWidth=width;ctx.stroke();
+}
+function background(tone){
+var bg=ctx.createRadialGradient(w*.5,h*.47,0,w*.5,h*.5,Math.max(w,h)*.65);bg.addColorStop(0,"#0c1524");bg.addColorStop(.42,"#050912");bg.addColorStop(1,"#010207");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+for(var s=0;s<125;s++){
+var px=((s*619.37)%997)/997*w,py=((s*197.93)%991)/991*h;
+var a=.08+.2*(.5+.5*Math.sin(s*34.7+t*.2));
+ctx.fillStyle="rgba(179,220,255,"+a+")";ctx.fillRect(px,py,1.1,1.1);
+}
+}
+function draw(now){
+raf=requestAnimationFrame(draw);
+if(document.hidden)return;
+if(!prev)prev=now;var delta=Math.min((now-prev)/1000,.05);prev=now;
+if(reduced)delta*=.08;t+=delta;
+energy+=(targetEnergy-energy)*Math.min(1,delta*3.5);
+var tone=specs[state][3],v=energy*intensity;
+ctx.setTransform(dpr,0,0,dpr,0,0);
+background(tone);
+var scale=Math.min(w/850,h/650,1.25);
+if(w<680)scale=Math.min(w/550,h/720);
+var cx=w*.5+(pointer.x-.5)*26*scale,cy=h*.48+(pointer.y-.5)*19*scale;
+var pulse=Math.sin(t*1.2)*5+v*6,orb=scale;
+ctx.save();ctx.translate(cx,cy);ctx.scale(orb,orb);
+ctx.save();
+ctx.rotate(-.12+Math.sin(t*.1)*.018);
+ctx.beginPath();ctx.ellipse(0,0,232,242,0,0,Math.PI*2);
+var glass=ctx.createLinearGradient(-220,-200,220,220);
+glass.addColorStop(0,"rgba(159,217,255,.22)");glass.addColorStop(.28,"rgba(87,111,172,.04)");glass.addColorStop(.76,"rgba(104,181,223,.06)");glass.addColorStop(1,"rgba(174,214,255,.19)");
+ctx.strokeStyle=glass;ctx.lineWidth=1.6;ctx.shadowColor=rgb(tone,.18);ctx.shadowBlur=28;ctx.stroke();ctx.shadowBlur=0;
+ctx.beginPath();ctx.ellipse(-7,3,206,219,0,-1.7,1.3);ctx.strokeStyle="rgba(151,203,244,.07)";ctx.lineWidth=12;ctx.stroke();ctx.restore();
+var halo=ctx.createRadialGradient(0,0,50,0,0,230+v*25);
+halo.addColorStop(0,rgb(tone,.10+v*.06));halo.addColorStop(.5,rgb(tone,.045));halo.addColorStop(1,rgb(tone,0));
+ctx.fillStyle=halo;ctx.beginPath();ctx.arc(0,0,255,0,Math.PI*2);ctx.fill();
+for(var ring=0;ring<3;ring++){
+ctx.save();ctx.rotate(ring*.65+t*(ring%2?.035:-.026));
+ctx.beginPath();ctx.ellipse(0,0,245+ring*28,214+ring*30,0,.26+ring,2.85+ring);
+ctx.strokeStyle=rgb(tone,.14-ring*.025);ctx.lineWidth=ring===0?1.3:.8;ctx.setLineDash([5+ring*2,11+ring*8]);ctx.stroke();ctx.restore();
+}
+var slide=Math.sin(t*.67)*4,dist=73+Math.sin(t*.54)*5;
+for(var f=0;f<13;f++){
+var a=(f/13)*Math.PI*2+t*.08,r=155+Math.sin(f*7+t)*22;
+var sx=Math.cos(a)*r,sy=Math.sin(a)*r*.88;
+var left=f%2===0,ex=(left?-dist:dist)+Math.cos(a)*42,ey=Math.sin(a)*74;
+drawFilament(ex,ey,sx,sy,Math.sin(a*2+t)*48,tone,.07+.14*v,(f%4===0?1.3:.65));
+}
+for(var e=0;e<7;e++){
+var py=(e-3)*20+Math.sin(t*1.3+e)*6;
+drawFilament(-dist+44,py,dist-40,py+Math.sin(t+e)*10,30+Math.cos(e+t)*13,tone,.22+.18*v,1.4);
+}
+drawLobe(-dist,slide,103+pulse*.25,130+pulse*.3,-1,tone,t*.95);
+drawLobe(dist+4,-slide*.35,92+pulse*.35,138+pulse*.22,1,tone,t*.85+1.3);
+var bridge=ctx.createRadialGradient(0,0,1,0,0,59+v*8);
+bridge.addColorStop(0,"rgba(238,251,255,.97)");bridge.addColorStop(.19,rgb(tone,.9));bridge.addColorStop(.51,rgb(tone,.3));bridge.addColorStop(1,rgb(tone,0));
+ctx.fillStyle=bridge;ctx.beginPath();ctx.ellipse(0,1,66+v*7,23+v*4,.06,0,Math.PI*2);ctx.fill();
+ctx.beginPath();ctx.moveTo(-38,-11);ctx.bezierCurveTo(-10,-21,10,19,39,10);ctx.strokeStyle="rgba(210,239,255,.53)";ctx.lineWidth=2.5;ctx.shadowColor=tone;ctx.shadowBlur=16;ctx.stroke();ctx.shadowBlur=0;
+if(state==="speaking"||state==="listening"){
+for(var q=0;q<3;q++){
+var rr=145+((t*62+q*65)%210);ctx.beginPath();ctx.ellipse(0,0,rr,rr*.88,0,0,Math.PI*2);
+ctx.strokeStyle=rgb(tone,(1-(rr-145)/210)*(.25+amplitude*.5));ctx.lineWidth=1.6;ctx.stroke();
+}
+}
+if(state==="dispatching"||state==="working"){
+for(var b=0;b<11;b++){
+var angle=b*.6+t*(state==="dispatching"?.9:.5),rr=185+Math.sin(b*8+t)*25;
+ctx.beginPath();ctx.arc(Math.cos(angle)*rr,Math.sin(angle)*rr*.85,1.5+(b%3),0,Math.PI*2);
+ctx.fillStyle=rgb(tone,.3+.5*(.5+.5*Math.sin(t*2+b)));ctx.fill();
+}
+}
+if(state==="warning"){
+ctx.beginPath();ctx.ellipse(0,0,240,235,0,0,Math.PI*2);ctx.strokeStyle=rgb(tone,.22+.15*Math.sin(t*5));ctx.lineWidth=3;ctx.stroke();
+}
+ctx.restore();
+}
+function select(stateName){simulated=true;amplitude=0;apply({state:stateName});}
+document.querySelectorAll("[data-state]").forEach(function(b){b.addEventListener("click",function(){select(b.dataset.state);});});
+document.getElementById("next").addEventListener("click",function(){select(order[(order.indexOf(state)+1)%order.length]);});
+document.getElementById("intensity").addEventListener("input",function(e){intensity=Number(e.target.value);});
+document.getElementById("complexity").addEventListener("input",function(e){complexity=Number(e.target.value);});
+document.getElementById("calm").checked=reduced;
+document.getElementById("calm").addEventListener("change",function(e){reduced=e.target.checked;});
+stage.addEventListener("pointermove",function(e){pointer.x=clamp(e.clientX/innerWidth,0,1);pointer.y=clamp(e.clientY/innerHeight,0,1);},{passive:true});
+window.addEventListener("resize",resize);
+window.addEventListener("cronos:presence",function(e){apply(e.detail);});
+window.addEventListener("message",function(e){if(e.origin!==location.origin)return;if(e.data&&e.data.type==="cronos:presence")apply(e.data.payload);});
+window.CronosPresence={setState:function(x){apply(x);},getState:function(){return state;}};
+resize();apply({state:"idle"});raf=requestAnimationFrame(draw);
+})();
+</script>
+</body></html>
