@@ -275,6 +275,12 @@ export default function App() {
                   ? 'Phase III • Bulle Centrale Chronos'
                   : 'Phase IV • Conscience Éveillée « Bonjour »'}
               </p>
+              <a
+                href="/cronos-presence.html"
+                className="mt-2 inline-flex items-center gap-2 rounded-lg border border-sky-400/30 bg-sky-950/30 px-2 py-1 text-[10px] font-mono uppercase tracking-wider text-sky-200 hover:border-sky-300/60 hover:text-white transition-colors"
+              >
+                CRONOS — Présence continue
+              </a>
             </div>
           </div>
 
