@@ -1,3 +1,40 @@
+# V2 — The Living Singularity (23 novembre 2026)
+
+## Direction artistique
+- Fond noir spatial (#01040a) et lattice hexagonale filaire subtile.
+- Noyau à deux lobes asymétriques en obsidienne, avec pont organique lumineux.
+- Raymarching WebGL2 en GLSL 300 ES : SDF avec union lissée, micro-plis,
+  crêtes ferrofluides, reflets chrome, Fresnel, éclairages cyan/violet/états.
+- Orbites elliptiques, guide orbital, particules, treillis de perspective et HUD discret.
+- Rendu 2D Canvas de secours **complet** quand WebGL2 est indisponible.
+- Résolution interne plafonnée, qualité auto/haute/basse, gestion mouvement réduit.
+- Tout tient dans un seul HTML autonome, sans CDN, compte ou coût.
+
+Le nouveau rendu remplace la V1 dans `public/cronos-presence.html`; l'ancien
+parcours narratif React reste intact et le lien depuis `src/App.tsx` fonctionne.
+
+## Tests réalisés en environnement de développement
+- Chromium headless, écran 1440×900 : page rendue, interactions des boutons,
+  aucun exception JavaScript, capture de vérification.
+- Chromium headless, écran 390×844 : page responsive rendue, aucun exception JavaScript.
+- Le navigateur de test ne propose pas WebGL2 : **seul le fallback Canvas 2D a été
+  vérifié visuellement**. La compilation et les performances du shader WebGL2
+  restent à confirmer sur la GTX 1060 et les téléphones.
+- Aucune passerelle CRONOS/Hermes n'a été connectée : les états du panneau sont
+  des simulations. Le contrat `cronos:presence` a été conservé.
+
+## Prochaines tâches
+1. Tester WebGL2 en navigateur réel, inspecter FPS et consommation mémoire.
+2. Raccorder un adaptateur événements read-only CRONOS Core/Hermes, avec TTL
+   d'activité et indicateur clair des sources simulées/réelles.
+3. Brancher voix réelle (analyse d'amplitude et états TTS/ASR) sans
+   capturer le micro sans consentement.
+4. Ajouter mode écran seul/overlay OBS et synchronisation LAN avec authentification.
+5. Travailler les contraintes de performance smartphone et le respect du
+   mouvement réduit.
+
+---
+
 # CRONOS — Présence ferrofluide permanente (prototype V1)
 
 ## Objectif
